@@ -1,0 +1,26 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "restaurants": {
+      "$rid": {
+        "tables": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "replies": {
+          ".read": true,
+          ".write": "auth != null"
+        },
+        "calls": {
+          ".read": "auth != null",
+          "$key": {
+            ".read": true,
+            ".write": "auth != null || (!data.exists() && newData.exists() && newData.child('code').val() === root.child('restaurants').child($rid).child('tables').child(newData.child('table').val()).child('code').val())",
+            ".validate": "newData.hasChildren(['table','type','ts','code']) && newData.child('table').isString() && newData.child('type').isString() && newData.child('type').val().matches(/^(waiter|bill|order|water)$/) && $key === newData.child('table').val() + '_' + newData.child('type').val() && newData.child('ts').val() === now"
+          }
+        }
+      }
+    }
+  }
+}

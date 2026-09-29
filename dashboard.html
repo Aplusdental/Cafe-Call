@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>شاشة الويتر</title>
+<style>
+:root{--bg:#EEF2F6;--panel:#fff;--ink:#1B2A41;--mute:#6B7A90;--line:#D8E0E9;--acc:#0F8B8D;--ok:#2E9E5B;--warn:#D98A1F;--bad:#D64545;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1724;--panel:#182335;--ink:#E8EEF6;--mute:#93A1B6;--line:#2B3A52}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Tajawal,Tahoma,Arial,sans-serif;padding:16px}
+.wrap{max-width:760px;margin:auto}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px}
+h1,h2{margin:0;font-size:19px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+input{font:inherit;width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-bottom:8px}
+button{font:inherit;border:0;border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:700;background:var(--acc);color:#fff}
+button.g{background:var(--ok)}button.l{background:transparent;color:var(--mute);border:1px solid var(--line)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.pill{font-size:12px;padding:3px 10px;border-radius:99px;background:color-mix(in srgb,var(--bad) 18%,transparent)}
+.pill.on{background:color-mix(in srgb,var(--ok) 18%,transparent)}
+.row{display:grid;grid-template-columns:60px 1fr auto auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-inline-start:6px solid var(--ok);border-radius:14px;margin-bottom:8px}
+.row.w1{border-inline-start-color:var(--warn)}.row.w2{border-inline-start-color:var(--bad)}
+.tn{font-size:26px;font-weight:800;text-align:center;line-height:1}.tn small{display:block;font-size:11px;color:var(--mute);font-weight:400}
+.tm{font-variant-numeric:tabular-nums;font-weight:700}.w1 .tm{color:var(--warn)}.w2 .tm{color:var(--bad)}
+.empty{color:var(--mute);text-align:center;padding:40px 10px}
+.lk{display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:13px}.lk span{flex:1;overflow-x:auto;white-space:nowrap;direction:ltr;color:var(--mute)}
+.err{color:var(--bad);font-size:14px;min-height:20px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="box" id="login">
+  <h1>دخول الموظفين</h1><p style="color:var(--mute);font-size:14px">سجّل دخول بالإيميل وكلمة السر اللي عملتها في Firebase.</p>
+  <input id="em" type="email" placeholder="الإيميل" dir="ltr" autocomplete="username">
+  <input id="pw" type="password" placeholder="كلمة السر" dir="ltr" autocomplete="current-password">
+  <button id="go">دخول</button><div class="err" id="lerr"></div>
+</div>
+
+<div id="main" hidden>
+  <div class="box">
+    <div class="top"><h1 id="title"></h1>
+      <div style="display:flex;gap:8px;align-items:center"><span class="pill" id="net">غير متصل</span><button id="snd">فعّل الصوت</button><button class="l" id="out">خروج</button></div></div>
+    <div id="list"></div>
+    <div style="font-size:12px;color:var(--mute)">الأقدم فوق. أخضر أقل من دقيقة، برتقالي أقل من دقيقتين، وأحمر بعد كده.</div>
+  </div>
+  <div class="box">
+    <div class="top"><h2>روابط الترابيزات</h2><button id="gen">جهّز الروابط</button></div>
+    <div id="links" style="font-size:14px;color:var(--mute)">اضغط "جهّز الروابط" أول مرة عشان يتعمل كود سري لكل ترابيزة. اللينك ده اللي يتحط في الـ QR والـ NFC.</div>
+  </div>
+</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="config.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const P = new URLSearchParams(location.search), rid = P.get("r") || "arkan", C = RESTAURANTS[rid];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+firebase.initializeApp(FB);
+const auth = firebase.auth(), db = firebase.database(), base = `restaurants/${rid}`;
+let calls = {}, known = new Set(), first = true, audio = null, listening = false;
+
+$("title").textContent = C ? "نداءات " + C.name : "محل غير معروف";
+$("go").onclick = () => auth.signInWithEmailAndPassword($("em").value.trim(), $("pw").value)
+  .catch(() => $("lerr").textContent = "الإيميل أو كلمة السر غلط.");
+$("out").onclick = () => auth.signOut();
+$("snd").onclick = () => { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); beep(); $("snd").textContent = "الصوت شغال"; };
+function beep() {
+  if (!audio) return;
+  const o = audio.createOscillator(), g = audio.createGain();
+  o.frequency.value = 880; o.connect(g); g.connect(audio.destination);
+  g.gain.setValueAtTime(.25, audio.currentTime); g.gain.exponentialRampToValueAtTime(.001, audio.currentTime + .6);
+  o.start(); o.stop(audio.currentTime + .6);
+}
+auth.onAuthStateChanged(u => {
+  $("login").hidden = !!u; $("main").hidden = !u;
+  if (u && C && !listening) start();
+});
+function start() {
+  listening = true;
+  db.ref(".info/connected").on("value", s => { $("net").textContent = s.val() ? "متصل" : "غير متصل"; $("net").className = "pill" + (s.val() ? " on" : ""); });
+  db.ref(`${base}/calls`).on("value", s => {
+    calls = s.val() || {};
+    const ids = Object.keys(calls);
+    if (!first && ids.some(i => !known.has(i))) beep();
+    known = new Set(ids); first = false; render();
+  });
+  setInterval(render, 1000);
+}
+function label(type) { const b = C.buttons.find(x => x.id === type); return b ? b.label : type; }
+const fmt = ms => { const s = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); };
+function render() {
+  const arr = Object.entries(calls).map(([id, c]) => ({ id, ...c })).filter(c => c.ts).sort((a, b) => a.ts - b.ts);
+  if (!arr.length) { $("list").innerHTML = '<div class="empty">مفيش نداءات دلوقتي. كل الترابيزات مخدومة.</div>'; return; }
+  $("list").innerHTML = arr.map(c => {
+    const age = Date.now() - c.ts, w = age > 120000 ? "w2" : age > 60000 ? "w1" : "";
+    return `<div class="row ${w}"><div class="tn"><small>ترابيزة</small>${esc(c.table)}</div><b>${esc(label(c.type))}</b><div class="tm">${fmt(age)}</div><button class="g" data-id="${esc(c.id)}">تم</button></div>`;
+  }).join("");
+  $("list").querySelectorAll("button").forEach(b => b.onclick = () => done(b.dataset.id));
+}
+function done(id) {
+  const c = calls[id]; if (!c) return;
+  db.ref(`${base}/replies/${c.table}`).set({ type: c.type, ts: firebase.database.ServerValue.TIMESTAMP })
+    .then(() => db.ref(`${base}/calls/${id}`).remove());
+}
+const rnd = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => (b % 36).toString(36)).join("");
+$("gen").onclick = async () => {
+  const snap = await db.ref(`${base}/tables`).get(), have = snap.val() || {}, upd = {};
+  for (let i = 1; i <= C.tables; i++) if (!have[i] || !have[i].code) upd[i] = { code: rnd() };
+  if (Object.keys(upd).length) await db.ref(`${base}/tables`).update(upd);
+  const all = (await db.ref(`${base}/tables`).get()).val() || {};
+  const dir = location.href.replace(/dashboard\.html.*$/, "");
+  $("links").innerHTML = Object.keys(all).sort((a, b) => a - b).map(n => {
+    const url = `${dir}index.html?r=${rid}&t=${n}&k=${all[n].code}`;
+    return `<div class="lk"><b>${esc(n)}</b><span>${esc(url)}</span><button class="l" data-u="${esc(url)}">نسخ</button></div>`;
+  }).join("");
+  $("links").querySelectorAll("button").forEach(b => b.onclick = () => { navigator.clipboard.writeText(b.dataset.u); b.textContent = "تم"; });
+};
+</script>
+</body>
+</html>

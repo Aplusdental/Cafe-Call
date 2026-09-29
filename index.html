@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>نداء الويتر</title>
+<style>
+:root{--bg:#EEF2F6;--panel:#fff;--ink:#1B2A41;--mute:#6B7A90;--line:#D8E0E9;--ok:#2E9E5B;--acc:#0F8B8D;--soft:#E3F1F1;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1724;--panel:#182335;--ink:#E8EEF6;--mute:#93A1B6;--line:#2B3A52;--soft:#173238}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Tajawal,Tahoma,Arial,sans-serif;display:flex;justify-content:center;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:18px;width:100%;max-width:420px}
+.brand{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.logo{width:42px;height:42px;border-radius:12px;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:800;font-size:20px}
+.brand b{display:block;font-size:17px}.brand span{font-size:13px;color:var(--mute)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cb{font:inherit;color:var(--ink);background:var(--soft);border:1.5px solid transparent;border-radius:16px;padding:16px 8px;min-height:104px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.cb:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.cb svg{width:30px;height:30px;stroke:var(--acc);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.cb b{font-size:15px}.cb small{color:var(--mute);font-size:12px}
+.cb:disabled{background:var(--panel);border-color:var(--line);cursor:default;opacity:.8}
+.status{margin-top:14px;min-height:44px;border-radius:12px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--mute)}
+.status.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ink)}
+.status.err{background:color-mix(in srgb,#D64545 16%,transparent);color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="card" id="app"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="config.js"></script>
+<script>
+const P = new URLSearchParams(location.search);
+const rid = P.get("r") || "arkan", t = P.get("t"), k = P.get("k");
+const C = RESTAURANTS[rid], app = document.getElementById("app");
+if (!C || !t || !k) {
+  app.innerHTML = '<div class="status err">اللينك ناقص. امسح الـ QR من على الترابيزة تاني.</div>';
+} else {
+  document.documentElement.style.setProperty("--acc", C.accent);
+  firebase.initializeApp(FB);
+  const db = firebase.database(), base = `restaurants/${rid}`;
+  app.innerHTML = `<div class="brand"><div class="logo">${C.name[0]}</div><div><b>${C.name}</b><span>ترابيزة رقم ${t}</span></div></div>
+    <div class="btns">${C.buttons.map(b => `<button class="cb" id="b_${b.id}" data-id="${b.id}"><svg viewBox="0 0 24 24"><path d="${b.icon}"/></svg><b>${b.label}</b><small>${b.sub}</small></button>`).join("")}</div>
+    <div class="status" id="st">اختار اللي تحتاجه وهيوصل للويتر فوراً.</div>`;
+  const st = document.getElementById("st");
+  const say = (m, c = "") => { st.textContent = m; st.className = "status " + c; };
+  const open = {};
+  C.buttons.forEach(b => {
+    db.ref(`${base}/calls/${t}_${b.id}`).on("value", s => {
+      open[b.id] = s.exists();
+      const el = document.getElementById("b_" + b.id);
+      el.disabled = open[b.id];
+      el.querySelector("small").textContent = open[b.id] ? "تم الإرسال" : b.sub;
+      if (open[b.id]) say("طلبك وصل. استنى لحظات.");
+    });
+  });
+  db.ref(`${base}/replies/${t}`).on("value", s => {
+    const r = s.val();
+    if (!r || Date.now() - r.ts > 120000) return;
+    const b = C.buttons.find(x => x.id === r.type);
+    if (b) say(b.reply, "ok");
+  });
+  document.querySelectorAll(".cb").forEach(el => el.onclick = () => {
+    const id = el.dataset.id;
+    db.ref(`${base}/calls/${t}_${id}`).set({ table: t, type: id, code: k, ts: firebase.database.ServerValue.TIMESTAMP })
+      .catch(() => say("مقدرناش نبعت الطلب. اتأكد من النت وحاول تاني، أو اندهله بصوتك.", "err"));
+  });
+}
+</script>
+</body>
+</html>
