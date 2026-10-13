@@ -26,6 +26,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
 .empty{color:var(--mute);text-align:center;padding:40px 10px}
 .lk{display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:13px}.lk span{flex:1;overflow-x:auto;white-space:nowrap;direction:ltr;color:var(--mute)}
 .err{color:var(--bad);font-size:14px;min-height:20px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.who{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:14px;color:var(--mute)}.who b{color:var(--ink)}
+select{font:inherit;width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-bottom:8px}
+.sec{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+.srow{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 0;font-size:14px}
+.lg{font-size:13px;padding:8px 0;border-bottom:1px solid var(--line)}.lg small{color:var(--mute)}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -42,14 +48,46 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-of
   <div class="box">
     <div class="top"><h1 id="title"></h1>
       <div style="display:flex;gap:8px;align-items:center"><span class="pill" id="net">غير متصل</span><button id="snd">فعّل الصوت</button><button class="l" id="out">خروج</button></div></div>
+    <div class="who">الويتر الحالي: <b id="curName">لم يسجّل أحد</b> <button class="l" id="wBtn">تسجيل ويتر</button> <button class="l" id="wOut" hidden>تسجيل خروج</button></div>
     <div id="list"></div>
     <div style="font-size:12px;color:var(--mute)">الأقدم فوق. أخضر أقل من دقيقة، برتقالي أقل من دقيقتين، وأحمر بعد كده.</div>
   </div>
-  <div class="box">
-    <div class="top"><h2>روابط الترابيزات</h2><button id="gen">جهّز الروابط</button></div>
+  <div class="box" id="adminBox" hidden>
+    <div class="top"><h2>روابط الترابيزات</h2><div style="display:flex;gap:8px"><button id="gen">جهّز الروابط</button><button class="l" id="lockAgain">قفل</button></div></div>
     <div id="links" style="font-size:14px;color:var(--mute)">اضغط "جهّز الروابط" أول مرة عشان يتعمل كود سري لكل ترابيزة. اللينك ده اللي يتحط في الـ QR والـ NFC.</div>
+    <div class="sec">
+      <h2 style="margin-bottom:10px">الويترز</h2>
+      <input id="sName" placeholder="اسم الويتر" maxlength="30">
+      <input id="sPin" type="password" inputmode="numeric" placeholder="رقم سري للويتر (4 أرقام أو أكتر)" dir="ltr" autocomplete="off">
+      <button id="sAdd">إضافة ويتر</button><div class="err" id="sErr"></div>
+      <div id="sList"></div>
+    </div>
+    <div class="sec">
+      <div class="top"><h2>سجل العمليات</h2><input id="lgT" type="number" min="1" placeholder="رقم الترابيزة (اختياري)" style="width:180px;margin:0"></div>
+      <div id="lgList" style="font-size:14px;color:var(--mute)">لسه مفيش عمليات.</div>
+    </div>
+  </div>
+  <div style="text-align:center"><button class="l" id="lockBtn" title="دخول الإدارة" aria-label="دخول الإدارة" style="padding:6px 10px;opacity:.6">🔒</button></div>
+</div>
+</div>
+
+<div id="pinModal" class="modal" hidden>
+  <div class="box" style="max-width:320px;width:100%;margin:0">
+    <div class="top"><h2>دخول الإدارة</h2><button class="l" id="pinClose" aria-label="إغلاق">✕</button></div>
+    <input id="pinInput" type="password" inputmode="numeric" placeholder="الرقم السري" dir="ltr" autocomplete="off">
+    <button id="pinGo" style="width:100%">دخول</button>
+    <div class="err" id="pinErr"></div>
   </div>
 </div>
+
+<div id="wModal" class="modal" hidden>
+  <div class="box" style="max-width:320px;width:100%;margin:0">
+    <div class="top"><h2>تسجيل ويتر</h2><button class="l" id="wClose" aria-label="إغلاق">✕</button></div>
+    <select id="wSel"></select>
+    <input id="wPin" type="password" inputmode="numeric" placeholder="الرقم السري" dir="ltr" autocomplete="off">
+    <button id="wGo" style="width:100%">دخول</button>
+    <div class="err" id="wErr"></div>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -62,19 +100,40 @@ const P = new URLSearchParams(location.search), rid = P.get("r") || "arkan", C =
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 firebase.initializeApp(FB);
 const auth = firebase.auth(), db = firebase.database(), base = `restaurants/${rid}`;
-let calls = {}, known = new Set(), first = true, audio = null, listening = false;
+let calls = {}, known = new Set(), first = true, audio = null, listening = false, staff = {}, cur = null, pendingDone = null, idleT = null;
 
 $("title").textContent = C ? "نداءات " + C.name : "محل غير معروف";
 $("go").onclick = () => auth.signInWithEmailAndPassword($("em").value.trim(), $("pw").value)
   .catch(() => $("lerr").textContent = "الإيميل أو كلمة السر غلط.");
-$("out").onclick = () => auth.signOut();
-$("snd").onclick = () => { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); beep(); $("snd").textContent = "الصوت شغال"; };
+$("out").onclick = () => { $("adminBox").hidden = true; auth.signOut(); };
+// قفل الإدارة: قايمة الروابط مخفية لحد ما يتكتب الرقم السري
+$("lockBtn").onclick = () => { $("pinInput").value = ""; $("pinErr").textContent = ""; $("pinModal").hidden = false; $("pinInput").focus(); };
+$("pinClose").onclick = () => { $("pinModal").hidden = true; };
+$("pinGo").onclick = () => {
+  if ($("pinInput").value === ADMIN_PIN) { $("pinModal").hidden = true; $("adminBox").hidden = false; startLog(); $("adminBox").scrollIntoView({ behavior: "smooth" }); }
+  else $("pinErr").textContent = "الرقم السري غلط.";
+};
+$("pinInput").onkeydown = e => { if (e.key === "Enter") $("pinGo").click(); };
+$("lockAgain").onclick = () => { $("adminBox").hidden = true; };
+let wakeLock = null;
+async function keepAwake() { try { if ("wakeLock" in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); } } catch (e) {} }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && audio) keepAwake(); });
+$("snd").onclick = () => { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); beep(); keepAwake(); $("snd").textContent = "الصوت شغال"; };
 function beep() {
   if (!audio) return;
-  const o = audio.createOscillator(), g = audio.createGain();
-  o.frequency.value = 880; o.connect(g); g.connect(audio.destination);
-  g.gain.setValueAtTime(.25, audio.currentTime); g.gain.exponentialRampToValueAtTime(.001, audio.currentTime + .6);
-  o.start(); o.stop(audio.currentTime + .6);
+  try { if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]); } catch (e) {}
+  if (audio.state === "suspended") audio.resume();
+  // ثلاث نغمات عالية ومتتالية (موجة مربعة أعلى في الإحساس بالصوت)
+  for (let i = 0; i < 3; i++) {
+    const t = audio.currentTime + i * 0.38;
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = "square"; o.frequency.value = 1000;
+    o.connect(g); g.connect(audio.destination);
+    g.gain.setValueAtTime(0.9, t);
+    g.gain.setValueAtTime(0.9, t + 0.22);
+    g.gain.linearRampToValueAtTime(0.001, t + 0.28);
+    o.start(t); o.stop(t + 0.3);
+  }
 }
 auth.onAuthStateChanged(u => {
   $("login").hidden = !!u; $("main").hidden = !u;
@@ -90,6 +149,9 @@ function start() {
     known = new Set(ids); first = false; render();
   });
   setInterval(render, 1000);
+  // تكرار التنبيه كل 10 ثواني طول ما فيه نداء لسه ماتردش عليه
+  setInterval(() => { if (Object.keys(calls).length) beep(); }, 10000);
+  db.ref(`${base}/staff`).on("value", s => { staff = s.val() || {}; renderStaff(); });
 }
 function label(type) { const b = C.buttons.find(x => x.id === type); return b ? b.label : type; }
 const fmt = ms => { const s = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); };
@@ -104,8 +166,68 @@ function render() {
 }
 function done(id) {
   const c = calls[id]; if (!c) return;
-  db.ref(`${base}/replies/${c.table}`).set({ type: c.type, ts: firebase.database.ServerValue.TIMESTAMP })
+  if (!cur) { pendingDone = id; openWaiter(); return; }
+  const TS = firebase.database.ServerValue.TIMESTAMP;
+  db.ref(`${base}/log`).push({ table: String(c.table), type: c.type, callTs: c.ts, doneTs: TS, waiter: cur.name, waiterId: cur.id })
+    .then(() => db.ref(`${base}/replies/${c.table}`).set({ type: c.type, ts: TS }))
     .then(() => db.ref(`${base}/calls/${id}`).remove());
+}
+
+// ===== الويترز: تسجيل بالاسم والرقم السري =====
+async function hashPin(id, pin) {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(id + ":" + pin));
+  return Array.from(new Uint8Array(b), x => x.toString(16).padStart(2, "0")).join("");
+}
+function setWaiter(w) {
+  cur = w;
+  $("curName").textContent = w ? w.name : "لم يسجّل أحد";
+  $("wOut").hidden = !w; $("wBtn").textContent = w ? "تبديل" : "تسجيل ويتر";
+  clearTimeout(idleT);
+  if (w) idleT = setTimeout(() => setWaiter(null), 10 * 60 * 1000); // يتقفل بعد 10 دقايق من غير حركة
+}
+["click", "touchstart", "keydown"].forEach(ev => document.addEventListener(ev, () => { if (cur) { clearTimeout(idleT); idleT = setTimeout(() => setWaiter(null), 10 * 60 * 1000); } }, { passive: true }));
+function openWaiter() {
+  const ids = Object.keys(staff);
+  $("wErr").textContent = ids.length ? "" : "مفيش ويترز مسجّلين. الإدارة تضيفهم من القفل 🔒 تحت.";
+  $("wSel").innerHTML = ids.map(i => `<option value="${esc(i)}">${esc(staff[i].name)}</option>`).join("");
+  $("wPin").value = ""; $("wModal").hidden = false; $("wPin").focus();
+}
+$("wBtn").onclick = openWaiter;
+$("wOut").onclick = () => setWaiter(null);
+$("wClose").onclick = () => { $("wModal").hidden = true; pendingDone = null; };
+$("wPin").onkeydown = e => { if (e.key === "Enter") $("wGo").click(); };
+$("wGo").onclick = async () => {
+  const id = $("wSel").value, w = staff[id];
+  if (!w) { $("wErr").textContent = "اختار ويتر."; return; }
+  if (await hashPin(id, $("wPin").value) !== w.pinHash) { $("wErr").textContent = "الرقم السري غلط."; return; }
+  setWaiter({ id, name: w.name }); $("wModal").hidden = true;
+  if (pendingDone) { const p = pendingDone; pendingDone = null; done(p); }
+};
+
+// ===== إدارة الويترز وسجل العمليات (جوه قفل الإدارة) =====
+function renderStaff() {
+  const ids = Object.keys(staff);
+  $("sList").innerHTML = ids.length ? ids.map(i => `<div class="srow"><span>${esc(staff[i].name)}</span><button class="l" data-s="${esc(i)}">حذف</button></div>`).join("") : '<div style="color:var(--mute);font-size:14px">لسه مفيش ويترز.</div>';
+  $("sList").querySelectorAll("button").forEach(b => b.onclick = () => { if (confirm("حذف الويتر؟")) db.ref(`${base}/staff/${b.dataset.s}`).remove(); });
+}
+$("sAdd").onclick = async () => {
+  const name = $("sName").value.trim(), pin = $("sPin").value;
+  if (!name || pin.length < 4) { $("sErr").textContent = "اكتب الاسم ورقم سري 4 أرقام أو أكتر."; return; }
+  const ref = db.ref(`${base}/staff`).push();
+  try { await ref.set({ name, pinHash: await hashPin(ref.key, pin) }); $("sName").value = ""; $("sPin").value = ""; $("sErr").textContent = ""; }
+  catch (e) { $("sErr").textContent = "مقدرناش نحفظ. اتأكد من النت وقواعد Firebase."; }
+};
+let logData = {}, logOn = false;
+const fmtT = ts => new Date(ts).toLocaleString("ar-EG", { day: "numeric", month: "numeric", hour: "numeric", minute: "2-digit" });
+function renderLog() {
+  const f = $("lgT").value.trim();
+  const arr = Object.values(logData).filter(x => !f || x.table === f).sort((a, b) => b.doneTs - a.doneTs);
+  $("lgList").innerHTML = arr.length ? arr.map(x => `<div class="lg"><b>ترابيزة ${esc(x.table)}</b> - ${esc(label(x.type))}<br><small>${esc(x.waiter)} · ${fmtT(x.doneTs)} · زمن الرد ${fmt(x.doneTs - x.callTs)}</small></div>`).join("") : "مفيش عمليات مطابقة.";
+}
+$("lgT").oninput = renderLog;
+function startLog() {
+  if (logOn) return; logOn = true;
+  db.ref(`${base}/log`).orderByChild("doneTs").limitToLast(100).on("value", s => { logData = s.val() || {}; renderLog(); });
 }
 const rnd = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => (b % 36).toString(36)).join("");
 $("gen").onclick = async () => {
