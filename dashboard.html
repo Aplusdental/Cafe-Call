@@ -33,6 +33,18 @@ select{font:inherit;width:100%;padding:10px;border-radius:10px;border:1px solid 
 .srow{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 0;font-size:14px}
 .lg{font-size:13px;padding:8px 0;border-bottom:1px solid var(--line)}.lg small{color:var(--mute)}
 [hidden]{display:none!important}
+#printArea{display:none}
+@media print{
+  body>.wrap,.modal{display:none!important}
+  body{background:#fff;color:#000;padding:0}
+  #printArea{display:block!important;color:#000;background:#fff;font-family:Tajawal,Tahoma,Arial,sans-serif}
+  #printArea h1{font-size:20px;margin:0 0 4px}
+  #printArea p{margin:0 0 10px;font-size:12px;color:#444}
+  #printArea table{width:100%;border-collapse:collapse;font-size:12px}
+  #printArea th,#printArea td{border:1px solid #999;padding:5px 6px;text-align:right}
+  #printArea th{background:#eee}
+  #printArea tr{page-break-inside:avoid}
+}
 </style>
 </head>
 <body>
@@ -63,7 +75,16 @@ select{font:inherit;width:100%;padding:10px;border-radius:10px;border:1px solid 
       <div id="sList"></div>
     </div>
     <div class="sec">
-      <div class="top"><h2>سجل العمليات</h2><input id="lgT" type="number" min="1" placeholder="رقم الترابيزة (اختياري)" style="width:180px;margin:0"></div>
+      <div class="top"><h2>سجل العمليات</h2><button class="l" id="lgPdf">تصدير PDF</button></div>
+      <select id="lgMode" aria-label="نوع البحث">
+        <option value="all">الكل</option>
+        <option value="table">بحث برقم الترابيزة</option>
+        <option value="waiter">بحث باسم الويتر</option>
+        <option value="day">بحث باليوم</option>
+      </select>
+      <input id="lgT" type="number" min="1" placeholder="رقم الترابيزة" hidden>
+      <input id="lgW" type="text" placeholder="اسم الويتر" hidden>
+      <input id="lgD" type="date" dir="ltr" hidden>
       <div id="lgList" style="font-size:14px;color:var(--mute)">لسه مفيش عمليات.</div>
     </div>
   </div>
@@ -217,18 +238,48 @@ $("sAdd").onclick = async () => {
   try { await ref.set({ name, pinHash: await hashPin(ref.key, pin) }); $("sName").value = ""; $("sPin").value = ""; $("sErr").textContent = ""; }
   catch (e) { $("sErr").textContent = "مقدرناش نحفظ. اتأكد من النت وقواعد Firebase."; }
 };
-let logData = {}, logOn = false;
+let logData = {}, logOn = false, logRef = null, logArr = [];
 const fmtT = ts => new Date(ts).toLocaleString("ar-EG", { day: "numeric", month: "numeric", hour: "numeric", minute: "2-digit" });
+const fmtFull = ts => new Date(ts).toLocaleString("ar-EG", { year: "numeric", day: "numeric", month: "numeric", hour: "numeric", minute: "2-digit" });
+function modeLabel() {
+  const m = $("lgMode").value;
+  if (m === "table" && $("lgT").value.trim()) return "ترابيزة رقم " + $("lgT").value.trim();
+  if (m === "waiter" && $("lgW").value.trim()) return "الويتر: " + $("lgW").value.trim();
+  if (m === "day" && $("lgD").value) return "يوم " + $("lgD").value;
+  return "كل العمليات (آخر 500)";
+}
 function renderLog() {
-  const f = $("lgT").value.trim();
-  const arr = Object.values(logData).filter(x => !f || x.table === f).sort((a, b) => b.doneTs - a.doneTs);
-  $("lgList").innerHTML = arr.length ? arr.map(x => `<div class="lg"><b>ترابيزة ${esc(x.table)}</b> - ${esc(label(x.type))}<br><small>${esc(x.waiter)} · ${fmtT(x.doneTs)} · زمن الرد ${fmt(x.doneTs - x.callTs)}</small></div>`).join("") : "مفيش عمليات مطابقة.";
+  const m = $("lgMode").value, t = $("lgT").value.trim(), w = $("lgW").value.trim().toLowerCase();
+  logArr = Object.values(logData).filter(x =>
+    m === "table" ? (!t || x.table === t) :
+    m === "waiter" ? (!w || String(x.waiter).toLowerCase().includes(w)) : true
+  ).sort((a, b) => b.doneTs - a.doneTs);
+  $("lgList").innerHTML = logArr.length ? logArr.map(x => `<div class="lg"><b>ترابيزة ${esc(x.table)}</b> - ${esc(label(x.type))}<br><small>${esc(x.waiter)} · ${fmtT(x.doneTs)} · زمن الرد ${fmt(x.doneTs - x.callTs)}</small></div>`).join("") : "مفيش عمليات مطابقة.";
 }
-$("lgT").oninput = renderLog;
-function startLog() {
-  if (logOn) return; logOn = true;
-  db.ref(`${base}/log`).orderByChild("doneTs").limitToLast(100).on("value", s => { logData = s.val() || {}; renderLog(); });
+function loadLog() {
+  if (logRef) logRef.off();
+  let q = db.ref(`${base}/log`).orderByChild("doneTs");
+  if ($("lgMode").value === "day") {
+    if (!$("lgD").value) { logData = {}; renderLog(); return; }
+    const [y, mo, d] = $("lgD").value.split("-").map(Number);
+    q = q.startAt(new Date(y, mo - 1, d).getTime()).endAt(new Date(y, mo - 1, d + 1).getTime() - 1);
+  } else q = q.limitToLast(500);
+  logRef = q;
+  q.on("value", s => { logData = s.val() || {}; renderLog(); });
 }
+$("lgMode").onchange = () => {
+  const m = $("lgMode").value;
+  $("lgT").hidden = m !== "table"; $("lgW").hidden = m !== "waiter"; $("lgD").hidden = m !== "day";
+  loadLog();
+};
+$("lgT").oninput = renderLog; $("lgW").oninput = renderLog; $("lgD").onchange = loadLog;
+function startLog() { if (logOn) return; logOn = true; loadLog(); }
+$("lgPdf").onclick = () => {
+  if (!logArr.length) { alert("مفيش عمليات لتصديرها."); return; }
+  const rows = logArr.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.table)}</td><td>${esc(label(x.type))}</td><td>${esc(x.waiter)}</td><td>${fmtFull(x.doneTs)}</td><td>${fmt(x.doneTs - x.callTs)}</td></tr>`).join("");
+  $("printArea").innerHTML = `<h1>سجل العمليات - ${esc(C.name)}</h1><p>${esc(modeLabel())} · عدد العمليات: ${logArr.length} · تاريخ الطباعة: ${fmtFull(Date.now())}</p><table><thead><tr><th>#</th><th>الترابيزة</th><th>الطلب</th><th>الويتر</th><th>الوقت</th><th>زمن الرد</th></tr></thead><tbody>${rows}</tbody></table>`;
+  window.print();
+};
 const rnd = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => (b % 36).toString(36)).join("");
 $("gen").onclick = async () => {
   const snap = await db.ref(`${base}/tables`).get(), have = snap.val() || {}, upd = {};
@@ -243,5 +294,6 @@ $("gen").onclick = async () => {
   $("links").querySelectorAll("button").forEach(b => b.onclick = () => { navigator.clipboard.writeText(b.dataset.u); b.textContent = "تم"; });
 };
 </script>
+<div id="printArea"></div>
 </body>
 </html>
