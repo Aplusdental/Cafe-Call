@@ -22,6 +22,47 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Tajawal,Tahoma,A
 .status{margin-top:14px;min-height:44px;border-radius:12px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--mute)}
 .status.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ink)}
 .status.err{background:color-mix(in srgb,#D64545 16%,transparent);color:var(--ink)}
+
+.logo-img{width:42px;height:42px;border-radius:50%;object-fit:cover}
+body.themed{background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23C68B59' stroke-opacity='.13' stroke-width='1.6' stroke-linecap='round'%3E%3Cg transform='rotate(-30 28 30)'%3E%3Cellipse cx='28' cy='30' rx='11' ry='16'/%3E%3Cpath d='M28 14c-6 8 6 14 0 32'/%3E%3C/g%3E%3Cg transform='rotate(40 90 84)'%3E%3Cellipse cx='90' cy='84' rx='11' ry='16'/%3E%3Cpath d='M90 68c-6 8 6 14 0 32'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");background-size:120px 120px}
+body.themed .card{border-color:var(--line);box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden;position:relative}
+.hero{position:relative;text-align:center;margin:-18px -18px 0;padding:48px 18px 6px;background:radial-gradient(circle at 50% 38%,rgba(198,139,89,.28),transparent 62%),linear-gradient(180deg,#241913,var(--panel))}
+.hero .logo-img{width:96px;height:96px;box-shadow:0 0 0 3px var(--panel),0 0 0 5px var(--acc),0 10px 26px rgba(0,0,0,.5)}
+.hero h1{margin:12px 0 2px;font-size:22px;letter-spacing:.5px;color:var(--ink)}
+.hero .tag{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--acc)}
+.tbl{display:inline-block;margin:12px 0 4px;padding:5px 16px;border-radius:99px;background:var(--soft);border:1px solid var(--acc);color:var(--ink);font-size:14px;font-weight:700}
+.steam{position:absolute;top:14px;left:50%;width:60px;height:30px;transform:translateX(-50%);opacity:.5}
+.steam path{fill:none;stroke:var(--acc);stroke-width:2;stroke-linecap:round;stroke-dasharray:30;animation:steam 3.2s ease-in-out infinite}
+.steam path:nth-child(2){animation-delay:.9s}.steam path:nth-child(3){animation-delay:1.8s}
+@keyframes steam{0%{stroke-dashoffset:30;opacity:0}40%{opacity:1}100%{stroke-dashoffset:-30;opacity:0}}
+@media (prefers-reduced-motion:reduce){.steam path{animation:none;stroke-dashoffset:0}}
+.sep{display:flex;align-items:center;gap:10px;margin:10px 0 14px;color:var(--acc)}
+.sep:before,.sep:after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--acc),transparent)}
+.sep svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
+body.themed .cb{border:1px solid var(--line);transition:transform .12s,border-color .12s}
+body.themed .cb:not(:disabled):active{transform:scale(.96);border-color:var(--acc)}
+body.themed .cb svg{box-sizing:content-box;width:20px;height:20px;padding:7px;border-radius:50%;background:rgba(198,139,89,.16)}
+body.themed .cb:disabled{background:var(--panel);border-color:var(--acc);opacity:.85}
+body.themed .status{background:var(--soft);border:1px solid var(--line)}
+body.themed .status.ok{background:color-mix(in srgb,var(--ok) 22%,var(--soft))}
+body.themed .status.err{background:color-mix(in srgb,#D64545 25%,var(--soft))}
+.menu{display:flex;align-items:center;justify-content:center;margin-top:10px;padding:12px;border-radius:14px;border:1.5px solid var(--acc);color:var(--ink);text-decoration:none;font-weight:700;font-size:15px}
+.menu:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+[hidden]{display:none!important}
+.rate{margin-top:14px;border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--soft)}
+.rate b{display:block;font-size:15px;margin-bottom:2px}.rate>small{color:var(--mute);font-size:12px}
+.rrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;font-size:14px}
+.stars{display:flex;gap:2px;direction:ltr}
+.sb{background:none;border:0;padding:0 2px;font-size:28px;line-height:1;color:var(--mute);opacity:.45;cursor:pointer}
+.sb.on{color:#E8A920;opacity:1}
+.sb:focus-visible{outline:3px solid var(--acc);outline-offset:2px;border-radius:6px}
+.rate textarea{font:inherit;width:100%;margin-top:10px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);resize:none;height:64px}
+.racts{display:flex;gap:8px;margin-top:10px}
+.racts button{font:inherit;border:0;border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;background:var(--acc);color:#fff;flex:1}
+.racts button.skip{background:transparent;color:var(--mute);border:1px solid var(--line);flex:0 0 auto}
+a.sb{text-decoration:none;display:inline-block}
+.ghint{display:block;color:var(--mute);font-size:12px;margin-top:4px}
+.rmsg{margin-top:8px;font-size:13px;color:#D64545;min-height:16px}
 </style>
 </head>
 <body>
@@ -37,11 +78,18 @@ if (!C || !t || !k) {
   app.innerHTML = '<div class="status err">اللينك ناقص. امسح الـ QR من على الترابيزة تاني.</div>';
 } else {
   document.documentElement.style.setProperty("--acc", C.accent);
+  if (C.theme) { document.body.classList.add("themed"); Object.entries(C.theme).forEach(([n, v]) => document.documentElement.style.setProperty(n, v)); }
   firebase.initializeApp(FB);
   const db = firebase.database(), base = `restaurants/${rid}`;
-  app.innerHTML = `<div class="brand"><div class="logo">${C.name[0]}</div><div><b>${C.name}</b><span>ترابيزة رقم ${t}</span></div></div>
+  const head = C.theme
+    ? `<div class="hero"><svg class="steam" viewBox="0 0 60 30" aria-hidden="true"><path d="M14 28c-6-6 6-10 0-18"/><path d="M30 28c-6-6 6-10 0-18"/><path d="M46 28c-6-6 6-10 0-18"/></svg>${C.logo ? `<img class="logo-img" src="${C.logo}" alt="${C.name}">` : `<div class="logo" style="margin:auto">${C.name[0]}</div>`}<h1 dir="auto">${C.name}</h1>${C.tagline ? `<div class="tag">${C.tagline}</div>` : ""}<div class="tbl">ترابيزة رقم ${t}</div></div>
+    <div class="sep" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="6" ry="9" transform="rotate(30 12 12)"/><path d="M9 4c-3 5 5 8 1 16" transform="rotate(30 12 12)"/></svg></div>`
+    : `<div class="brand">${C.logo ? `<img class="logo-img" src="${C.logo}" alt="${C.name}">` : `<div class="logo">${C.name[0]}</div>`}<div><b>${C.name}</b><span>ترابيزة رقم ${t}</span></div></div>`;
+  app.innerHTML = `${head}
     <div class="btns">${C.buttons.map(b => `<button class="cb" id="b_${b.id}" data-id="${b.id}"><svg viewBox="0 0 24 24"><path d="${b.icon}"/></svg><b>${b.label}</b><small>${b.sub}</small></button>`).join("")}</div>
-    <div class="status" id="st">اختار اللي تحتاجه وهيوصل للويتر فوراً.</div>`;
+    <a class="menu" id="menuBtn" target="_blank" rel="noopener" hidden>المنيو</a>
+    <div class="status" id="st">اختار اللي تحتاجه وهيوصل للويتر فوراً.</div>
+    <div class="rate" id="rate" hidden></div>`;
   const st = document.getElementById("st");
   const say = (m, c = "") => { st.textContent = m; st.className = "status " + c; };
   const open = {};
@@ -60,6 +108,66 @@ if (!C || !t || !k) {
     const b = C.buttons.find(x => x.id === r.type);
     if (b) say(b.reply, "ok");
   });
+
+  // ===== المنيو (اللينك بيتظبط من صفحة الإدارة) =====
+  db.ref(`${base}/settings/menuUrl`).on("value", s => {
+    const v = s.val(), a = document.getElementById("menuBtn");
+    try { const u = new URL(v, location.href); if (v && /^https?:$/.test(u.protocol)) { a.href = u.href; a.hidden = false; return; } } catch (e) {}
+    a.hidden = true;
+  });
+  // ===== لينك تقييم Google (بيتظبط من صفحة الإدارة) =====
+  let gUrl = "";
+  const gOk = v => { try { const u = new URL(v); return /^https?:$/.test(u.protocol) ? u.href : ""; } catch (e) { return ""; } };
+  db.ref(`${base}/settings/googleUrl`).on("value", s => { gUrl = gOk(s.val()) || gOk(C.googleReview); });
+  // ===== التقييم: مرة واحدة بعد طلب الحساب =====
+  if (C.rating) {
+    const esc = x => String(x).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const box = document.getElementById("rate"), val = {};
+    let shown = false;
+    const starsRow = k => `<div class="stars" data-k="${k}">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="sb" data-v="${n}" aria-label="${n} من 5" aria-pressed="false">★</button>`).join("")}</div>`;
+    const showRate = (r, key) => {
+      const gk = `gshown_${rid}`; let gs = false;
+      try { gs = !!localStorage.getItem(gk); } catch (e) {}
+      const showG = !!gUrl && !gs;
+      if (!showG && !r.waiter) return;
+      shown = true;
+      box.innerHTML = `<b>رأيك يهمنا</b><small>تقييم سريع من غير أي بيانات شخصية</small>
+        ${showG ? `<a class="menu" id="gl" href="${gUrl}" target="_blank" rel="noopener">تقييم المكان</a>` : ""}
+        ${r.waiter ? `<div class="rrow"><span>الويتر ${esc(r.waiter)}</span>${starsRow("waiter")}</div>
+        <textarea id="rc" maxlength="200" placeholder="تعليق (اختياري)"></textarea>
+        <div class="rmsg" id="rm" role="alert"></div>
+        <div class="racts"><button id="rs">إرسال</button><button class="skip" id="rk">تخطي</button></div>` : `<div class="racts"><button class="skip" id="rk">إغلاق</button></div>`}`;
+      box.hidden = false;
+      box.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+      const finish = msg => { try { localStorage.setItem(key, "1"); } catch (e) {} box.innerHTML = msg ? `<b>${msg}</b>` : ""; box.hidden = !msg; };
+      const gl = document.getElementById("gl");
+      if (gl) gl.onclick = () => {
+        try { localStorage.setItem(gk, "1"); } catch (e) {}
+        setTimeout(() => { if (r.waiter) gl.outerHTML = "<small>شكراً لتقييمك المكان</small>"; else finish("شكراً لتقييمك"); }, 0);
+      };
+      box.querySelectorAll(".stars").forEach(g => g.querySelectorAll(".sb").forEach(b => b.onclick = () => {
+        val[g.dataset.k] = +b.dataset.v;
+        g.querySelectorAll(".sb").forEach(x => { const on = +x.dataset.v <= val[g.dataset.k]; x.classList.toggle("on", on); x.setAttribute("aria-pressed", on); });
+      }));
+      document.getElementById("rk").onclick = () => finish("");
+      const rs = document.getElementById("rs");
+      if (rs) rs.onclick = () => {
+        if (!val.waiter) { document.getElementById("rm").textContent = "اختار نجوم الويتر الأول."; return; }
+        const d = { table: t, code: k, ts: firebase.database.ServerValue.TIMESTAMP, waiter: val.waiter, waiterName: String(r.waiter || "").slice(0, 39) };
+        if (r.waiterId) d.waiterId = String(r.waiterId).slice(0, 39);
+        const c = document.getElementById("rc").value.trim(); if (c) d.comment = c;
+        db.ref(`${base}/ratings`).push(d).then(() => finish("شكراً لتقييمك"))
+          .catch(() => { document.getElementById("rm").textContent = "مقدرناش نبعت التقييم. حاول تاني."; });
+      };
+    };
+    db.ref(`${base}/replies/${t}`).on("value", s => {
+      const r = s.val();
+      if (shown || !r || r.type !== "bill" || Date.now() - r.ts > 600000) return;
+      const key = `rated_${rid}_${t}_${r.ts}`;
+      try { if (localStorage.getItem(key)) return; } catch (e) {}
+      showRate(r, key);
+    });
+  }
   document.querySelectorAll(".cb").forEach(el => el.onclick = () => {
     const id = el.dataset.id;
     db.ref(`${base}/calls/${t}_${id}`).set({ table: t, type: id, code: k, ts: firebase.database.ServerValue.TIMESTAMP })

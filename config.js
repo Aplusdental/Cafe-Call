@@ -26,5 +26,25 @@ const RESTAURANTS = {
       { id: "water", label: "مياه", sub: "مياه أو تلج", reply: "المياه جاية",
         icon: "M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" }
     ]
+  },
+  bellissimo: {
+    name: "Bellissimo Coffee",
+    tagline: "Fresh & Natural",
+    rating: true,
+    googleReview: "https://search.google.com/local/writereview?placeid=ChIJ9-GccACr9xQRzUWj9jxnmuk",
+    logo: "logos/bellissimo.png",
+    accent: "#C68B59",
+    theme: { "--bg": "#14100D", "--panel": "#1E1713", "--ink": "#F4EADF", "--mute": "#BBA896", "--line": "#3A2A1F", "--soft": "#2A1F18" },
+    tables: 20,
+    buttons: [
+      { id: "waiter", label: "نداء الويتر", sub: "هييجي لحضرتك", reply: "الويتر في الطريق ليك",
+        icon: "M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0" },
+      { id: "bill", label: "طلب الحساب", sub: "الفاتورة", reply: "الحساب جاي حالاً",
+        icon: "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" },
+      { id: "order", label: "عايز أطلب", sub: "أوردر جديد", reply: "الويتر جاي ياخد الأوردر",
+        icon: "M5 4h14v16H5zM9 9h6M9 13h6" },
+      { id: "water", label: "مياه", sub: "مياه أو تلج", reply: "المياه جاية",
+        icon: "M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" }
+    ]
   }
 };
