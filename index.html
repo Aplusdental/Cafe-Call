@@ -125,6 +125,7 @@ if (!C || !t || !k) {
   if (C.rating) {
     const esc = x => String(x).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     const box = document.getElementById("rate"), val = {};
+    if (P.get("resetg")) { try { localStorage.removeItem(`gshown_${rid}`); } catch (e) {} }
     let shown = false;
     const starsRow = k => `<div class="stars" data-k="${k}">${[1, 2, 3, 4, 5].map(n => `<button type="button" class="sb" data-v="${n}" aria-label="${n} من 5" aria-pressed="false">★</button>`).join("")}</div>`;
     const showRate = (r, key) => {
@@ -157,6 +158,7 @@ if (!C || !t || !k) {
         if (!val.waiter) { document.getElementById("rm").textContent = "اختار نجوم الويتر الأول."; return; }
         const d = { table: t, code: k, ts: firebase.database.ServerValue.TIMESTAMP, waiter: val.waiter, waiterName: String(r.waiter || "").slice(0, 39) };
         if (r.waiterId) d.waiterId = String(r.waiterId).slice(0, 39);
+        if (typeof r.ts === "number") d.billTs = r.ts;
         const c = document.getElementById("rc").value.trim(); if (c) d.comment = c;
         db.ref(`${base}/ratings`).push(d).then(() => finish("شكراً لتقييمك"))
           .catch(() => { document.getElementById("rm").textContent = "مقدرناش نبعت التقييم. حاول تاني."; });

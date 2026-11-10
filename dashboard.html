@@ -256,7 +256,7 @@ $("sAdd").onclick = async () => {
   try { await ref.set({ name, pinHash: await hashPin(ref.key, pin) }); $("sName").value = ""; $("sPin").value = ""; $("sErr").textContent = ""; }
   catch (e) { $("sErr").textContent = "مقدرناش نحفظ. اتأكد من النت وقواعد Firebase."; }
 };
-let logData = {}, logOn = false, logRef = null, logArr = [];
+let logData = {}, logOn = false, logRef = null, logArr = [], rtRef = null, rtLog = [];
 const fmtT = ts => new Date(ts).toLocaleString("ar-EG", { day: "numeric", month: "numeric", hour: "numeric", minute: "2-digit" });
 const fmtFull = ts => new Date(ts).toLocaleString("ar-EG", { year: "numeric", day: "numeric", month: "numeric", hour: "numeric", minute: "2-digit" });
 function modeLabel() {
@@ -266,24 +266,44 @@ function modeLabel() {
   if (m === "day" && $("lgD").value) return "يوم " + $("lgD").value;
   return "كل العمليات (آخر 500)";
 }
+function rateTxt(r) {
+  if (!r) return "";
+  const p = [];
+  if (r.waiter) p.push("الويتر " + starsTxt(r.waiter));
+  if (r.place) p.push("المكان " + starsTxt(r.place));
+  return p.join(" · ") + (r.comment ? " - " + r.comment : "");
+}
+function attachRatings(arr) {
+  const used = new Set(), rs = rtLog.slice().sort((a, b) => a.ts - b.ts);
+  arr.forEach(x => {
+    if (x.type !== "bill") return;
+    let r = rs.find(q => !used.has(q) && q.table === x.table && q.billTs && Math.abs(q.billTs - x.doneTs) < 60000);
+    if (!r) r = rs.find(q => !used.has(q) && !q.billTs && q.table === x.table && q.ts >= x.doneTs && q.ts - x.doneTs <= 900000 && (!q.waiterId || !x.waiterId || q.waiterId === x.waiterId));
+    if (r) { used.add(r); x.rate = r; }
+  });
+}
 function renderLog() {
   const m = $("lgMode").value, t = $("lgT").value.trim(), w = $("lgW").value.trim().toLowerCase();
-  logArr = Object.values(logData).filter(x =>
+  const all = Object.values(logData).map(x => ({ ...x })).sort((a, b) => a.doneTs - b.doneTs);
+  attachRatings(all);
+  logArr = all.filter(x =>
     m === "table" ? (!t || x.table === t) :
     m === "waiter" ? (!w || String(x.waiter).toLowerCase().includes(w)) : true
   ).sort((a, b) => b.doneTs - a.doneTs);
-  $("lgList").innerHTML = logArr.length ? logArr.map(x => `<div class="lg"><b>ترابيزة ${esc(x.table)}</b> - ${esc(label(x.type))}<br><small>${esc(x.waiter)} · ${fmtT(x.doneTs)} · زمن الرد ${fmt(x.doneTs - x.callTs)}</small></div>`).join("") : "مفيش عمليات مطابقة.";
+  $("lgList").innerHTML = logArr.length ? logArr.map(x => `<div class="lg"><b>ترابيزة ${esc(x.table)}</b> - ${esc(label(x.type))}<br><small>${esc(x.waiter)} · ${fmtT(x.doneTs)} · زمن الرد ${fmt(x.doneTs - x.callTs)}</small>${x.rate ? `<br><small>التقييم: ${esc(rateTxt(x.rate))}</small>` : ""}</div>`).join("") : "مفيش عمليات مطابقة.";
 }
 function loadLog() {
   if (logRef) logRef.off();
-  let q = db.ref(`${base}/log`).orderByChild("doneTs");
+  if (rtRef) rtRef.off();
+  let q = db.ref(`${base}/log`).orderByChild("doneTs"), rq = db.ref(`${base}/ratings`).orderByChild("ts");
   if ($("lgMode").value === "day") {
-    if (!$("lgD").value) { logData = {}; renderLog(); return; }
-    const [y, mo, d] = $("lgD").value.split("-").map(Number);
-    q = q.startAt(new Date(y, mo - 1, d).getTime()).endAt(new Date(y, mo - 1, d + 1).getTime() - 1);
-  } else q = q.limitToLast(500);
-  logRef = q;
+    if (!$("lgD").value) { logData = {}; rtLog = []; renderLog(); return; }
+    const [y, mo, d] = $("lgD").value.split("-").map(Number), s0 = new Date(y, mo - 1, d).getTime(), s1 = new Date(y, mo - 1, d + 1).getTime() - 1;
+    q = q.startAt(s0).endAt(s1); rq = rq.startAt(s0).endAt(s1 + 900000);
+  } else { q = q.limitToLast(500); rq = rq.limitToLast(500); }
+  logRef = q; rtRef = rq;
   q.on("value", s => { logData = s.val() || {}; renderLog(); });
+  rq.on("value", s => { rtLog = Object.values(s.val() || {}); renderLog(); });
 }
 $("lgMode").onchange = () => {
   const m = $("lgMode").value;
@@ -294,8 +314,8 @@ $("lgT").oninput = renderLog; $("lgW").oninput = renderLog; $("lgD").onchange = 
 function startLog() { if (logOn) return; logOn = true; loadLog(); }
 $("lgPdf").onclick = () => {
   if (!logArr.length) { alert("مفيش عمليات لتصديرها."); return; }
-  const rows = logArr.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.table)}</td><td>${esc(label(x.type))}</td><td>${esc(x.waiter)}</td><td>${fmtFull(x.doneTs)}</td><td>${fmt(x.doneTs - x.callTs)}</td></tr>`).join("");
-  $("printArea").innerHTML = `<h1>سجل العمليات - ${esc(C.name)}</h1><p>${esc(modeLabel())} · عدد العمليات: ${logArr.length} · تاريخ الطباعة: ${fmtFull(Date.now())}</p><table><thead><tr><th>#</th><th>الترابيزة</th><th>الطلب</th><th>الويتر</th><th>الوقت</th><th>زمن الرد</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const rows = logArr.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.table)}</td><td>${esc(label(x.type))}</td><td>${esc(x.waiter)}</td><td>${fmtFull(x.doneTs)}</td><td>${fmt(x.doneTs - x.callTs)}</td><td>${x.rate ? esc(rateTxt(x.rate)) : "-"}</td></tr>`).join("");
+  $("printArea").innerHTML = `<h1>سجل العمليات - ${esc(C.name)}</h1><p>${esc(modeLabel())} · عدد العمليات: ${logArr.length} · تاريخ الطباعة: ${fmtFull(Date.now())}</p><table><thead><tr><th>#</th><th>الترابيزة</th><th>الطلب</th><th>الويتر</th><th>الوقت</th><th>زمن الرد</th><th>التقييم</th></tr></thead><tbody>${rows}</tbody></table>`;
   window.print();
 };
 // ===== المنيو والتقييمات (جوه قفل الإدارة) =====
