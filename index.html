@@ -47,6 +47,8 @@ body.themed .status{background:var(--soft);border:1px solid var(--line)}
 body.themed .status.ok{background:color-mix(in srgb,var(--ok) 22%,var(--soft))}
 body.themed .status.err{background:color-mix(in srgb,#D64545 25%,var(--soft))}
 .menu{display:flex;align-items:center;justify-content:center;margin-top:10px;padding:12px;border-radius:14px;border:1.5px solid var(--acc);color:var(--ink);text-decoration:none;font-weight:700;font-size:15px}
+.menu{gap:8px}
+.menu svg{width:20px;height:20px;fill:none;stroke:var(--acc);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .menu:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 [hidden]{display:none!important}
 .rate{margin-top:14px;border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--soft)}
@@ -87,7 +89,7 @@ if (!C || !t || !k) {
     : `<div class="brand">${C.logo ? `<img class="logo-img" src="${C.logo}" alt="${C.name}">` : `<div class="logo">${C.name[0]}</div>`}<div><b>${C.name}</b><span>ترابيزة رقم ${t}</span></div></div>`;
   app.innerHTML = `${head}
     <div class="btns">${C.buttons.map(b => `<button class="cb" id="b_${b.id}" data-id="${b.id}"><svg viewBox="0 0 24 24"><path d="${b.icon}"/></svg><b>${b.label}</b><small>${b.sub}</small></button>`).join("")}</div>
-    <a class="menu" id="menuBtn" target="_blank" rel="noopener" hidden>المنيو</a>
+    <a class="menu" id="menuBtn" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5c3-1 6-1 10 1 4-2 7-2 10-1v14c-3-1-6-1-10 1-4-2-7-2-10-1zM12 6v14"/></svg><span>المنيو</span></a>
     <div class="status" id="st">اختار اللي تحتاجه وهيوصل للويتر فوراً.</div>
     <div class="rate" id="rate" hidden></div>`;
   const st = document.getElementById("st");

@@ -32,7 +32,7 @@ const RESTAURANTS = {
     tagline: "Fresh & Natural",
     rating: true,
     googleReview: "https://search.google.com/local/writereview?placeid=ChIJ9-GccACr9xQRzUWj9jxnmuk",
-    logo: "logos/bellissimo.png",
+    logo: "bellissimo.png",
     accent: "#C68B59",
     theme: { "--bg": "#14100D", "--panel": "#1E1713", "--ink": "#F4EADF", "--mute": "#BBA896", "--line": "#3A2A1F", "--soft": "#2A1F18" },
     tables: 20,
