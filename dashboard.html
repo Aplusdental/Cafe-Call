@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>شاشة الويتر</title>
+<style>
+:root{--bg:#EEF2F6;--panel:#fff;--ink:#1B2A41;--mute:#6B7A90;--line:#D8E0E9;--acc:#0F8B8D;--ok:#2E9E5B;--warn:#D98A1F;--bad:#D64545;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1724;--panel:#182335;--ink:#E8EEF6;--mute:#93A1B6;--line:#2B3A52}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Tajawal,Tahoma,Arial,sans-serif;padding:16px}
+.wrap{max-width:760px;margin:auto}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px}
+h1,h2{margin:0;font-size:19px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+input{font:inherit;width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-bottom:8px}
+button{font:inherit;border:0;border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:700;background:var(--acc);color:#fff}
+button.g{background:var(--ok)}button.l{background:transparent;color:var(--mute);border:1px solid var(--line)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.pill{font-size:12px;padding:3px 10px;border-radius:99px;background:color-mix(in srgb,var(--bad) 18%,transparent)}
+.pill.on{background:color-mix(in srgb,var(--ok) 18%,transparent)}
+.row{display:grid;grid-template-columns:60px 1fr auto auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-inline-start:6px solid var(--ok);border-radius:14px;margin-bottom:8px}
+.row.w1{border-inline-start-color:var(--warn)}.row.w2{border-inline-start-color:var(--bad)}
+.tn{font-size:26px;font-weight:800;text-align:center;line-height:1}.tn small{display:block;font-size:11px;color:var(--mute);font-weight:400}
+.tm{font-variant-numeric:tabular-nums;font-weight:700}.w1 .tm{color:var(--warn)}.w2 .tm{color:var(--bad)}
+.empty{color:var(--mute);text-align:center;padding:40px 10px}
+.lk{display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:13px}.lk span{flex:1;overflow-x:auto;white-space:nowrap;direction:ltr;color:var(--mute)}
+.err{color:var(--bad);font-size:14px;min-height:20px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.who{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:14px;color:var(--mute)}.who b{color:var(--ink)}
+select{font:inherit;width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-bottom:8px}
+.sec{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+.srow{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 0;font-size:14px}
+.lg{font-size:13px;padding:8px 0;border-bottom:1px solid var(--line)}.lg small{color:var(--mute)}
+summary{cursor:pointer;font-size:19px;font-weight:700}
+[hidden]{display:none!important}
+#printArea{display:none}
+@media print{
+  body>.wrap,.modal{display:none!important}
+  body{background:#fff;color:#000;padding:0}
+  #printArea{display:block!important;color:#000;background:#fff;font-family:Tajawal,Tahoma,Arial,sans-serif}
+  #printArea h1{font-size:20px;margin:0 0 4px}
+  #printArea p{margin:0 0 10px;font-size:12px;color:#444}
+  #printArea h2{font-size:15px;margin:14px 0 6px;color:#000}
+  #printArea table{margin-bottom:10px}
+  #printArea table{width:100%;border-collapse:collapse;font-size:12px}
+  #printArea th,#printArea td{border:1px solid #999;padding:5px 6px;text-align:right}
+  #printArea th{background:#eee}
+  #printArea tr{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="box" id="login">
+  <h1>دخول الموظفين</h1><p style="color:var(--mute);font-size:14px">سجّل دخول بالإيميل وكلمة السر اللي عملتها في Firebase.</p>
+  <input id="em" type="email" placeholder="الإيميل" dir="ltr" autocomplete="username">
+  <input id="pw" type="password" placeholder="كلمة السر" dir="ltr" autocomplete="current-password">
+  <button id="go">دخول</button><div class="err" id="lerr"></div>
+</div>
+
+<div id="main" hidden>
+  <div class="box">
+    <div class="top"><h1 id="title"></h1>
+      <div style="display:flex;gap:8px;align-items:center"><span class="pill" id="net">غير متصل</span><button id="snd">فعّل الصوت</button><button class="l" id="out">خروج</button></div></div>
+    <div class="who">الويتر الحالي: <b id="curName">لم يسجّل أحد</b> <button class="l" id="wBtn">تسجيل ويتر</button> <button class="l" id="wOut" hidden>تسجيل خروج</button></div>
+    <div id="list"></div>
+    <div style="font-size:12px;color:var(--mute)">الأقدم فوق. أخضر أقل من دقيقة، برتقالي أقل من دقيقتين، وأحمر بعد كده.</div>
+  </div>
+  <div class="box" id="adminBox" hidden>
+    <div class="top"><h2>روابط الترابيزات</h2><div style="display:flex;gap:8px"><button id="gen">جهّز الروابط</button><button class="l" id="lockAgain">قفل</button></div></div>
+    <div id="links" style="font-size:14px;color:var(--mute)">اضغط "جهّز الروابط" أول مرة عشان يتعمل كود سري لكل ترابيزة. اللينك ده اللي يتحط في الـ QR والـ NFC.</div>
+    <div class="sec">
+      <h2 style="margin-bottom:10px">الويترز</h2>
+      <input id="sName" placeholder="اسم الويتر" maxlength="30">
+      <input id="sPin" type="password" inputmode="numeric" placeholder="رقم سري للويتر (4 أرقام أو أكتر)" dir="ltr" autocomplete="off">
+      <button id="sAdd">إضافة ويتر</button><div class="err" id="sErr"></div>
+      <div id="sList"></div>
+    </div>
+    <div class="sec">
+      <h2 style="margin-bottom:10px">المنيو</h2>
+      <input id="mUrl" dir="ltr" placeholder="لينك المنيو (https://...) أو اسم ملف مثل menu.pdf" autocomplete="off">
+      <div style="display:flex;gap:8px"><button id="mSave">حفظ</button><button class="l" id="mClear">مسح (إخفاء الزرار)</button></div>
+      <div class="err" id="mMsg"></div>
+    </div>
+    <div class="sec">
+      <h2 style="margin-bottom:10px">تقييم Google</h2>
+      <input id="gUrl" dir="ltr" placeholder="لينك تقييم المكان على Google (https://...)" autocomplete="off">
+      <div style="display:flex;gap:8px"><button id="gSave">حفظ</button><button class="l" id="gClear">مسح</button></div>
+      <div class="err" id="gMsg"></div>
+    </div>
+    <div class="sec">
+      <details id="rtBox">
+        <summary>التقييمات <small id="rtCount" style="color:var(--mute);font-weight:400"></small></summary>
+        <div class="top" style="margin:10px 0 8px"><span style="color:var(--mute);font-size:13px">بحث في التقييمات</span><button class="l" id="rtPdf">تصدير PDF</button></div>
+        <select id="rtMode" aria-label="نوع البحث في التقييمات">
+          <option value="all">الكل</option>
+          <option value="name">بحث بالاسم (الويتر)</option>
+          <option value="rate">بحث بالتقييم (عدد النجوم)</option>
+          <option value="day">بحث باليوم</option>
+          <option value="table">بحث بالترابيزة</option>
+        </select>
+        <input id="rtN" type="text" placeholder="اسم الويتر" hidden>
+        <select id="rtS" aria-label="عدد النجوم" hidden>
+          <option value="5">5 نجوم</option><option value="4">4 نجوم</option><option value="3">3 نجوم</option><option value="2">2 نجمتين</option><option value="1">1 نجمة</option>
+        </select>
+        <input id="rtD" type="date" dir="ltr" hidden>
+        <input id="rtT" type="number" min="1" placeholder="رقم الترابيزة" hidden>
+        <div id="rtSum" style="font-size:14px;color:var(--mute)">لسه مفيش تقييمات.</div>
+        <div id="rtNameSum" style="font-size:14px"></div>
+        <div id="rtList" style="font-size:14px"></div>
+      </details>
+    </div>
+    <div class="sec">
+      <div class="top"><h2>سجل العمليات</h2><button class="l" id="lgPdf">تصدير PDF</button></div>
+      <select id="lgMode" aria-label="نوع البحث">
+        <option value="all">الكل</option>
+        <option value="table">بحث برقم الترابيزة</option>
+        <option value="waiter">بحث باسم الويتر</option>
+        <option value="day">بحث باليوم</option>
+      </select>
+      <input id="lgT" type="number" min="1" placeholder="رقم الترابيزة" hidden>
+      <input id="lgW" type="text" placeholder="اسم الويتر" hidden>
+      <input id="lgD" type="date" dir="ltr" hidden>
+      <div id="lgList" style="font-size:14px;color:var(--mute)">لسه مفيش عمليات.</div>
+    </div>
+  </div>
+  <div style="text-align:center"><button class="l" id="lockBtn" title="دخول الإدارة" aria-label="دخول الإدارة" style="padding:6px 10px;opacity:.6">🔒</button></div>
+</div>
+</div>
+
+<div id="pinModal" class="modal" hidden>
+  <div class="box" style="max-width:320px;width:100%;margin:0">
+    <div class="top"><h2>دخول الإدارة</h2><button class="l" id="pinClose" aria-label="إغلاق">✕</button></div>
+    <input id="pinInput" type="password" inputmode="numeric" placeholder="الرقم السري" dir="ltr" autocomplete="off">
+    <button id="pinGo" style="width:100%">دخول</button>
+    <div class="err" id="pinErr"></div>
+  </div>
+</div>
+
+<div id="wModal" class="modal" hidden>
+  <div class="box" style="max-width:320px;width:100%;margin:0">
+    <div class="top"><h2>تسجيل ويتر</h2><button class="l" id="wClose" aria-label="إغلاق">✕</button></div>
+    <select id="wSel"></select>
+    <input id="wPin" type="password" inputmode="numeric" placeholder="الرقم السري" dir="ltr" autocomplete="off">
+    <button id="wGo" style="width:100%">دخول</button>
+    <div class="err" id="wErr"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="config.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const P = new URLSearchParams(location.search), rid = P.get("r") || "arkan", C = RESTAURANTS[rid];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+firebase.initializeApp(FB);
+const auth = firebase.auth(), db = firebase.database(), base = `restaurants/${rid}`;
+let calls = {}, known = new Set(), first = true, audio = null, listening = false, staff = {}, cur = null, pendingDone = null, idleT = null;
+
+$("title").textContent = C ? "نداءات " + C.name : "محل غير معروف";
+$("go").onclick = () => auth.signInWithEmailAndPassword($("em").value.trim(), $("pw").value)
+  .catch(() => $("lerr").textContent = "الإيميل أو كلمة السر غلط.");
+$("out").onclick = () => { $("adminBox").hidden = true; auth.signOut(); };
+// قفل الإدارة: قايمة الروابط مخفية لحد ما يتكتب الرقم السري
+$("lockBtn").onclick = () => { $("pinInput").value = ""; $("pinErr").textContent = ""; $("pinModal").hidden = false; $("pinInput").focus(); };
+$("pinClose").onclick = () => { $("pinModal").hidden = true; };
+$("pinGo").onclick = () => {
+  if ($("pinInput").value === ADMIN_PIN) { $("pinModal").hidden = true; $("adminBox").hidden = false; startLog(); startExtras(); $("adminBox").scrollIntoView({ behavior: "smooth" }); }
+  else $("pinErr").textContent = "الرقم السري غلط.";
+};
+$("pinInput").onkeydown = e => { if (e.key === "Enter") $("pinGo").click(); };
+$("lockAgain").onclick = () => { $("adminBox").hidden = true; };
+let wakeLock = null;
+async function keepAwake() { try { if ("wakeLock" in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); } } catch (e) {} }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && audio) keepAwake(); });
+$("snd").onclick = () => { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); beep(); keepAwake(); $("snd").textContent = "الصوت شغال"; };
+function beep() {
+  if (!audio) return;
+  try { if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]); } catch (e) {}
+  if (audio.state === "suspended") audio.resume();
+  // ثلاث نغمات عالية ومتتالية (موجة مربعة أعلى في الإحساس بالصوت)
+  for (let i = 0; i < 3; i++) {
+    const t = audio.currentTime + i * 0.38;
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = "square"; o.frequency.value = 1000;
+    o.connect(g); g.connect(audio.destination);
+    g.gain.setValueAtTime(0.9, t);
+    g.gain.setValueAtTime(0.9, t + 0.22);
+    g.gain.linearRampToValueAtTime(0.001, t + 0.28);
+    o.start(t); o.stop(t + 0.3);
+  }
+}
+auth.onAuthStateChanged(u => {
+  $("login").hidden = !!u; $("main").hidden = !u;
+  if (u && C && !listening) start();
+});
+function start() {
+  listening = true;
+  db.ref(".info/connected").on("value", s => { $("net").textContent = s.val() ? "متصل" : "غير متصل"; $("net").className = "pill" + (s.val() ? " on" : ""); });
+  db.ref(`${base}/calls`).on("value", s => {
+    calls = s.val() || {};
+    const ids = Object.keys(calls);
+    if (!first && ids.some(i => !known.has(i))) beep();
+    known = new Set(ids); first = false; render();
+  });
+  setInterval(render, 1000);
+  // تكرار التنبيه كل 10 ثواني طول ما فيه نداء لسه ماتردش عليه
+  setInterval(() => { if (Object.keys(calls).length) beep(); }, 10000);
+  db.ref(`${base}/staff`).on("value", s => { staff = s.val() || {}; renderStaff(); });
+}
+function label(type) { const b = C.buttons.find(x => x.id === type); return b ? b.label : type; }
+const fmt = ms => { const s = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); };
+function render() {
+  const arr = Object.entries(calls).map(([id, c]) => ({ id, ...c })).filter(c => c.ts).sort((a, b) => a.ts - b.ts);
+  if (!arr.length) { $("list").innerHTML = '<div class="empty">مفيش نداءات دلوقتي. كل الترابيزات مخدومة.</div>'; return; }
+  $("list").innerHTML = arr.map(c => {
+    const age = Date.now() - c.ts, w = age > 120000 ? "w2" : age > 60000 ? "w1" : "";
+    return `<div class="row ${w}"><div class="tn"><small>ترابيزة</small>${esc(c.table)}</div><b>${esc(label(c.type))}</b><div class="tm">${fmt(age)}</div><button class="g" data-id="${esc(c.id)}">تم</button></div>`;
+  }).join("");
+  $("list").querySelectorAll("button").forEach(b => b.onclick = () => done(b.dataset.id));
+}
+function done(id) {
+  const c = calls[id]; if (!c) return;
+  if (!cur) { pendingDone = id; openWaiter(); return; }
+  const TS = firebase.database.ServerValue.TIMESTAMP;
+  db.ref(`${base}/log`).push({ table: String(c.table), type: c.type, callTs: c.ts, doneTs: TS, waiter: cur.name, waiterId: cur.id })
+    .then(() => db.ref(`${base}/replies/${c.table}`).set({ type: c.type, ts: TS, waiter: cur.name, waiterId: cur.id }))
+    .then(() => db.ref(`${base}/calls/${id}`).remove());
+}
+
+// ===== الويترز: تسجيل بالاسم والرقم السري =====
+async function hashPin(id, pin) {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(id + ":" + pin));
+  return Array.from(new Uint8Array(b), x => x.toString(16).padStart(2, "0")).join("");
+}
+function setWaiter(w) {
+  cur = w;
+  $("curName").textContent = w ? w.name : "لم يسجّل أحد";
+  $("wOut").hidden = !w; $("wBtn").textContent = w ? "تبديل" : "تسجيل ويتر";
+  clearTimeout(idleT);
+  if (w) idleT = setTimeout(() => setWaiter(null), 10 * 60 * 1000); // يتقفل بعد 10 دقايق من غير حركة
+}
+["click", "touchstart", "keydown"].forEach(ev => document.addEventListener(ev, () => { if (cur) { clearTimeout(idleT); idleT = setTimeout(() => setWaiter(null), 10 * 60 * 1000); } }, { passive: true }));
+function openWaiter() {
+  const ids = Object.keys(staff);
+  $("wErr").textContent = ids.length ? "" : "مفيش ويترز مسجّلين. الإدارة تضيفهم من القفل 🔒 تحت.";
+  $("wSel").innerHTML = ids.map(i => `<option value="${esc(i)}">${esc(staff[i].name)}</option>`).join("");
+  $("wPin").value = ""; $("wModal").hidden = false; $("wPin").focus();
+}
+$("wBtn").onclick = openWaiter;
+$("wOut").onclick = () => setWaiter(null);
+$("wClose").onclick = () => { $("wModal").hidden = true; pendingDone = null; };
+$("wPin").onkeydown = e => { if (e.key === "Enter") $("wGo").click(); };
+$("wGo").onclick = async () => {
+  const id = $("wSel").value, w = staff[id];
+  if (!w) { $("wErr").textContent = "اختار ويتر."; return; }
+  if (await hashPin(id, $("wPin").value) !== w.pinHash) { $("wErr").textContent = "الرقم السري غلط."; return; }
+  setWaiter({ id, name: w.name }); $("wModal").hidden = true;
+  if (pendingDone) { const p = pendingDone; pendingDone = null; done(p); }
+};
+
+// ===== إدارة الويترز وسجل العمليات (جوه قفل الإدارة) =====
+function renderStaff() {
+  const ids = Object.keys(staff);
+  $("sList").innerHTML = ids.length ? ids.map(i => `<div class="srow"><span>${esc(staff[i].name)}</span><button class="l" data-s="${esc(i)}">حذف</button></div>`).join("") : '<div style="color:var(--mute);font-size:14px">لسه مفيش ويترز.</div>';
+  $("sList").querySelectorAll("button").forEach(b => b.onclick = () => { if (confirm("حذف الويتر؟")) db.ref(`${base}/staff/${b.dataset.s}`).remove(); });
+}
+$("sAdd").onclick = async () => {
+  const name = $("sName").value.trim(), pin = $("sPin").value;
+  if (!name || pin.length < 4) { $("sErr").textContent = "اكتب الاسم ورقم سري 4 أرقام أو أكتر."; return; }
+  const ref = db.ref(`${base}/staff`).push();
+  try { await ref.set({ name, pinHash: await hashPin(ref.key, pin) }); $("sName").value = ""; $("sPin").value = ""; $("sErr").textContent = ""; }
+  catch (e) { $("sErr").textContent = "مقدرناش نحفظ. اتأكد من النت وقواعد Firebase."; }
+};
+let logData = {}, logOn = false, logRef = null, logArr = [], rtRef = null, rtLog = [];
+const fmtT = ts => new Date(ts).toLocaleString("ar-EG", { day: "numeric", month: "numeric", hour: "numeric", minute: "2-digit" });
+const fmtFull = ts => new Date(ts).toLocaleString("ar-EG", { year: "numeric", day: "numeric", month: "numeric", hour: "numeric", minute: "2-digit" });
+function modeLabel() {
+  const m = $("lgMode").value;
+  if (m === "table" && $("lgT").value.trim()) return "ترابيزة رقم " + $("lgT").value.trim();
+  if (m === "waiter" && $("lgW").value.trim()) return "الويتر: " + $("lgW").value.trim();
+  if (m === "day" && $("lgD").value) return "يوم " + $("lgD").value;
+  return "كل العمليات (آخر 500)";
+}
+function rateTxt(r) {
+  if (!r) return "";
+  const p = [];
+  if (r.waiter) p.push("الويتر " + starsTxt(r.waiter));
+  if (r.place) p.push("المكان " + starsTxt(r.place));
+  return p.join(" · ") + (r.comment ? " - " + r.comment : "");
+}
+function attachRatings(arr) {
+  const used = new Set(), rs = rtLog.slice().sort((a, b) => a.ts - b.ts);
+  arr.forEach(x => {
+    if (x.type !== "bill") return;
+    let r = rs.find(q => !used.has(q) && q.table === x.table && q.billTs && Math.abs(q.billTs - x.doneTs) < 60000);
+    if (!r) r = rs.find(q => !used.has(q) && !q.billTs && q.table === x.table && q.ts >= x.doneTs - 5000 && q.ts - x.doneTs <= 900000 && (!q.waiterId || !x.waiterId || q.waiterId === x.waiterId));
+    if (r) { used.add(r); x.rate = r; }
+  });
+}
+function renderLog() {
+  const m = $("lgMode").value, t = $("lgT").value.trim(), w = $("lgW").value.trim().toLowerCase();
+  const all = Object.values(logData).map(x => ({ ...x })).sort((a, b) => a.doneTs - b.doneTs);
+  attachRatings(all);
+  logArr = all.filter(x =>
+    m === "table" ? (!t || x.table === t) :
+    m === "waiter" ? (!w || String(x.waiter).toLowerCase().includes(w)) : true
+  ).sort((a, b) => b.doneTs - a.doneTs);
+  $("lgList").innerHTML = logArr.length ? logArr.map(x => `<div class="lg"><b>ترابيزة ${esc(x.table)}</b> - ${esc(label(x.type))}<br><small>${esc(x.waiter)} · ${fmtT(x.doneTs)} · زمن الرد ${fmt(x.doneTs - x.callTs)}</small>${x.rate ? `<br><small>التقييم: ${esc(rateTxt(x.rate))}</small>` : ""}</div>`).join("") : "مفيش عمليات مطابقة.";
+}
+function loadLog() {
+  if (logRef) logRef.off();
+  if (rtRef) rtRef.off();
+  let q = db.ref(`${base}/log`).orderByChild("doneTs"), rq = db.ref(`${base}/ratings`).orderByChild("ts");
+  if ($("lgMode").value === "day") {
+    if (!$("lgD").value) { logData = {}; rtLog = []; renderLog(); return; }
+    const [y, mo, d] = $("lgD").value.split("-").map(Number), s0 = new Date(y, mo - 1, d).getTime(), s1 = new Date(y, mo - 1, d + 1).getTime() - 1;
+    q = q.startAt(s0).endAt(s1); rq = rq.startAt(s0).endAt(s1 + 900000);
+  } else { q = q.limitToLast(500); rq = rq.limitToLast(500); }
+  logRef = q; rtRef = rq;
+  q.on("value", s => { logData = s.val() || {}; renderLog(); });
+  rq.on("value", s => { rtLog = Object.values(s.val() || {}); renderLog(); });
+}
+$("lgMode").onchange = () => {
+  const m = $("lgMode").value;
+  $("lgT").hidden = m !== "table"; $("lgW").hidden = m !== "waiter"; $("lgD").hidden = m !== "day";
+  loadLog();
+};
+$("lgT").oninput = renderLog; $("lgW").oninput = renderLog; $("lgD").onchange = loadLog;
+function startLog() { if (logOn) return; logOn = true; loadLog(); }
+$("lgPdf").onclick = () => {
+  if (!logArr.length) { alert("مفيش عمليات لتصديرها."); return; }
+  const rows = logArr.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.table)}</td><td>${esc(label(x.type))}</td><td>${esc(x.waiter)}</td><td>${fmtFull(x.doneTs)}</td><td>${fmt(x.doneTs - x.callTs)}</td><td>${x.rate ? esc(rateTxt(x.rate)) : "-"}</td></tr>`).join("");
+  $("printArea").innerHTML = `<h1>سجل العمليات - ${esc(C.name)}</h1><p>${esc(modeLabel())} · عدد العمليات: ${logArr.length} · تاريخ الطباعة: ${fmtFull(Date.now())}</p><table><thead><tr><th>#</th><th>الترابيزة</th><th>الطلب</th><th>الويتر</th><th>الوقت</th><th>زمن الرد</th><th>التقييم</th></tr></thead><tbody>${rows}</tbody></table>`;
+  window.print();
+};
+// ===== المنيو والتقييمات (جوه قفل الإدارة) =====
+let extOn = false;
+const mMsg = (t, ok) => { $("mMsg").textContent = t; $("mMsg").style.color = ok ? "var(--ok)" : "var(--bad)"; };
+const okUrl = v => { try { return /^https?:$/.test(new URL(v, location.href).protocol); } catch (e) { return false; } };
+$("mSave").onclick = () => {
+  const v = $("mUrl").value.trim();
+  if (!v) return $("mClear").onclick();
+  if (!okUrl(v)) return mMsg("اللينك غير صالح. لازم يبدأ بـ https:// أو يكون اسم ملف.", false);
+  db.ref(`${base}/settings/menuUrl`).set(v).then(() => mMsg("تم الحفظ.", true)).catch(() => mMsg("مقدرناش نحفظ. اتأكد من النت وقواعد Firebase.", false));
+};
+$("mClear").onclick = () => db.ref(`${base}/settings/menuUrl`).remove().then(() => { $("mUrl").value = ""; mMsg("تم المسح. زرار المنيو مخفي للعملاء.", true); }).catch(() => mMsg("مقدرناش نمسح.", false));
+const gMsg = (t, ok) => { $("gMsg").textContent = t; $("gMsg").style.color = ok ? "var(--ok)" : "var(--bad)"; };
+$("gSave").onclick = () => {
+  const v = $("gUrl").value.trim();
+  if (!v) return $("gClear").onclick();
+  if (!/^https?:\/\//i.test(v) || !okUrl(v)) return gMsg("اللينك غير صالح. لازم يبدأ بـ https://", false);
+  db.ref(`${base}/settings/googleUrl`).set(v).then(() => gMsg("تم الحفظ.", true)).catch(() => gMsg("مقدرناش نحفظ. اتأكد من النت وقواعد Firebase.", false));
+};
+$("gClear").onclick = () => db.ref(`${base}/settings/googleUrl`).remove().then(() => { $("gUrl").value = ""; gMsg("تم المسح.", true); }).catch(() => gMsg("مقدرناش نمسح.", false));
+const starsTxt = n => "★".repeat(n) + "☆".repeat(5 - n);
+let rtAll = [], rtArr = [];
+const pad2 = n => String(n).padStart(2, "0");
+const dayKey = ts => { const d = new Date(ts); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); };
+const fmtK = k => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("ar-EG", { year: "numeric", month: "numeric", day: "numeric" }); };
+const avgOf = l => l.reduce((s, v) => s + v, 0) / l.length;
+function waiterGroups(list) {
+  const g = {};
+  list.forEach(x => { if (!x.waiter) return; const k = x.waiterId || x.waiterName || "-"; (g[k] = g[k] || { n: x.waiterName || "-", rs: [] }).rs.push(x); });
+  return Object.values(g);
+}
+function nameStats(n) {
+  const match = rtAll.filter(x => x.waiter && String(x.waiterName || "").toLowerCase().includes(n));
+  return waiterGroups(match).map(g => {
+    const days = {};
+    g.rs.forEach(x => (days[dayKey(x.ts)] = days[dayKey(x.ts)] || []).push(x.waiter));
+    return { name: g.n, count: g.rs.length, avg: avgOf(g.rs.map(x => x.waiter)), first: Math.min(...g.rs.map(x => x.ts)),
+      days: Object.entries(days).sort((a, b) => a[0] < b[0] ? 1 : -1).map(([k, v]) => ({ k, count: v.length, avg: avgOf(v) })) };
+  });
+}
+const starCell = x => (x.waiter ? starsTxt(x.waiter) + " (" + x.waiter + "/5)" : "-") + (x.place ? " · المكان " + starsTxt(x.place) : "");
+function rtLabel() {
+  const m = $("rtMode").value;
+  if (m === "name" && $("rtN").value.trim()) return "الويتر: " + $("rtN").value.trim();
+  if (m === "rate") return $("rtS").value + " نجوم";
+  if (m === "day" && $("rtD").value) return "يوم " + $("rtD").value;
+  if (m === "table" && $("rtT").value.trim()) return "ترابيزة رقم " + $("rtT").value.trim();
+  return "كل التقييمات";
+}
+function renderRatings() {
+  $("rtCount").textContent = "(" + rtAll.length + ")";
+  const all = rtAll.slice().sort((a, b) => b.ts - a.ts);
+  const pl = all.filter(x => x.place).map(x => x.place), ws = waiterGroups(all).sort((a, b) => avgOf(b.rs.map(x => x.waiter)) - avgOf(a.rs.map(x => x.waiter)));
+  $("rtSum").innerHTML = (pl.length ? `<div class="lg"><b>المكان:</b> ${avgOf(pl).toFixed(1)} / 5 <small>(${pl.length} تقييم)</small></div>` : "")
+    + ws.map(w => `<div class="lg"><b>${esc(w.n)}:</b> ${avgOf(w.rs.map(x => x.waiter)).toFixed(1)} / 5 <small>(${w.rs.length} تقييم)</small></div>`).join("") || "لسه مفيش تقييمات.";
+  const m = $("rtMode").value, n = $("rtN").value.trim().toLowerCase(), st = +$("rtS").value, d = $("rtD").value, t = $("rtT").value.trim();
+  rtArr = all.filter(x =>
+    m === "name" ? (!n || String(x.waiterName || "").toLowerCase().includes(n)) :
+    m === "rate" ? x.waiter === st :
+    m === "day" ? (!d || dayKey(x.ts) === d) :
+    m === "table" ? (!t || String(x.table) === t) : true);
+  const ns = m === "name" && n ? nameStats(n) : [];
+  $("rtNameSum").innerHTML = ns.map(w => `<div class="lg"><b>${esc(w.name)}</b><br><small>التقييم الإجمالي ${w.avg.toFixed(2)} / 5 (${w.count} تقييم) · من أول تقييم ${fmtK(dayKey(w.first))}</small>`
+    + w.days.slice(0, 14).map(x => `<br><small>${fmtK(x.k)}: متوسط ${x.avg.toFixed(1)} (${x.count})</small>`).join("") + "</div>").join("");
+  $("rtList").innerHTML = (rtArr.length ? rtArr.slice(0, 100).map(x => `<div class="lg"><b>ترابيزة ${esc(x.table)}</b>${x.waiterName ? " · " + esc(x.waiterName) : ""} · ${esc(starCell(x))}${x.comment ? "<br>" + esc(x.comment) : ""}<br><small>${fmtT(x.ts)}</small></div>`).join("") + (rtArr.length > 100 ? `<div class="lg"><small>معروض أول 100 من ${rtArr.length}. الـ PDF فيه الكل.</small></div>` : "") : '<div class="lg">مفيش تقييمات مطابقة.</div>');
+}
+$("rtMode").onchange = () => {
+  const m = $("rtMode").value;
+  $("rtN").hidden = m !== "name"; $("rtS").hidden = m !== "rate"; $("rtD").hidden = m !== "day"; $("rtT").hidden = m !== "table";
+  renderRatings();
+};
+["rtN", "rtT"].forEach(i => $(i).oninput = renderRatings); $("rtS").onchange = renderRatings; $("rtD").onchange = renderRatings;
+$("rtPdf").onclick = () => {
+  if (!rtArr.length) { alert("مفيش تقييمات لتصديرها."); return; }
+  const n = $("rtN").value.trim().toLowerCase(), ns = $("rtMode").value === "name" && n ? nameStats(n) : [];
+  const sum = ns.map(w => `<h2>الويتر: ${esc(w.name)}</h2><p>التقييم الإجمالي: ${w.avg.toFixed(2)} / 5 (${w.count} تقييم) · من أول تقييم بتاريخ ${fmtK(dayKey(w.first))}</p><table><thead><tr><th>اليوم</th><th>عدد التقييمات</th><th>متوسط اليوم</th></tr></thead><tbody>${w.days.map(x => `<tr><td>${fmtK(x.k)}</td><td>${x.count}</td><td>${x.avg.toFixed(2)} / 5</td></tr>`).join("")}</tbody></table>`).join("");
+  const rows = rtArr.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.table)}</td><td>${esc(x.waiterName || "-")}</td><td>${esc(starCell(x))}</td><td>${esc(x.comment || "")}</td><td>${fmtFull(x.ts)}</td></tr>`).join("");
+  $("printArea").innerHTML = `<h1>التقييمات - ${esc(C.name)}</h1><p>${esc(rtLabel())} · عدد التقييمات: ${rtArr.length} · تاريخ الطباعة: ${fmtFull(Date.now())}</p>${sum}<h2>التفاصيل</h2><table><thead><tr><th>#</th><th>الترابيزة</th><th>الويتر</th><th>التقييم</th><th>التعليق</th><th>الوقت</th></tr></thead><tbody>${rows}</tbody></table>`;
+  window.print();
+};
+function startExtras() {
+  if (extOn) return; extOn = true;
+  db.ref(`${base}/settings/menuUrl`).on("value", s => { $("mUrl").value = s.val() || ""; });
+  db.ref(`${base}/settings/googleUrl`).on("value", s => { $("gUrl").value = s.val() || ""; });
+  db.ref(`${base}/ratings`).orderByChild("ts").limitToLast(5000).on("value", s => { rtAll = Object.values(s.val() || {}); renderRatings(); });
+}
+const rnd = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => (b % 36).toString(36)).join("");
+$("gen").onclick = async () => {
+  const snap = await db.ref(`${base}/tables`).get(), have = snap.val() || {}, upd = {};
+  for (let i = 1; i <= C.tables; i++) if (!have[i] || !have[i].code) upd[i] = { code: rnd() };
+  if (Object.keys(upd).length) await db.ref(`${base}/tables`).update(upd);
+  const all = (await db.ref(`${base}/tables`).get()).val() || {};
+  const dir = location.href.replace(/dashboard\.html.*$/, "");
+  $("links").innerHTML = Object.keys(all).sort((a, b) => a - b).map(n => {
+    const url = `${dir}index.html?r=${rid}&t=${n}&k=${all[n].code}`;
+    return `<div class="lk"><b>${esc(n)}</b><span>${esc(url)}</span><button class="l" data-u="${esc(url)}">نسخ</button></div>`;
+  }).join("");
+  $("links").querySelectorAll("button").forEach(b => b.onclick = () => { navigator.clipboard.writeText(b.dataset.u); b.textContent = "تم"; });
+};
+</script>
+<div id="printArea"></div>
+</body>
+</html>
